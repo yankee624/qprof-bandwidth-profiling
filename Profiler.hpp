@@ -3,9 +3,6 @@
 
 #include "QProfilerApi.h"
 
-#include <vector>
-#include <ostream>
-
 namespace qprof {
 
 class Profiler {
@@ -14,26 +11,32 @@ class Profiler {
     static Profiler instance;
     return instance;
   }
-  
+
   Profiler(void (*result_callback)(LpProfilingResult) = ResultCallback,
            void (*message_callback)(LpProfilingMessage) = MessageCallback);
   ~Profiler();
 
   void Start();
   void Stop();
-  void SetFile(std::ostream& file) {
-    file_ = &file;
-  }
+  void PrintCapabilities();
 
   static void ResultCallback(LpProfilingResult profiling_result);
   static void MessageCallback(LpProfilingMessage profiling_message);
 
  private:
-  std::ostream* file_ = nullptr;
+  bool bw_started_ = false;
+  bool nsp_started_ = false;
+  bool stats_started_ = false;
 
   LpContextRequest context_request_ = nullptr;
   LpProfilingEventStartConfiguration start_config_ = nullptr;
   LpProfilingEventStopConfiguration stop_config_ = nullptr;
+  LpProfilingEventStartConfiguration start_config_bw_ = nullptr;
+  LpProfilingEventStopConfiguration stop_config_bw_ = nullptr;
+  LpProfilingEventStartConfiguration start_config_nsp_ = nullptr;
+  LpProfilingEventStopConfiguration stop_config_nsp_ = nullptr;
+  LpProfilingEventStartConfiguration start_config_stats_ = nullptr;
+  LpProfilingEventStopConfiguration stop_config_stats_ = nullptr;
 };
 
 }  // namespace qprof

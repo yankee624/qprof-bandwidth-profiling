@@ -7,6 +7,7 @@
 int main() {
   qprof::Profiler& profiler = qprof::Profiler::Get();
 
+  profiler.PrintCapabilities();
   profiler.Start();
 
   // double sum = 0.0;
