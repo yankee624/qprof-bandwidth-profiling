@@ -20,7 +20,7 @@ int main() {
   // }
   // std::cout << "Computation result: " << sum << std::endl;
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000*1000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(60*1000));
 
   profiler.Stop();
   
