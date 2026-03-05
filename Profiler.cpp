@@ -1,6 +1,7 @@
 #include "Profiler.hpp"
 
 #include <cstdio>
+#include <chrono>
 #include <iostream>
 #include <unordered_map>
 
@@ -90,11 +91,24 @@ static const std::unordered_map<uint32_t, const char*> kMetricNames = {
 
 static uint32_t count_ = 0;
 
+static std::ostream& Log(std::ostream& os = std::cout) {
+  using namespace std::chrono;
+  auto now = system_clock::now();
+  auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
+  std::time_t t = system_clock::to_time_t(now);
+  struct tm tm_buf;
+  localtime_r(&t, &tm_buf);
+  char buf[32];
+  snprintf(buf, sizeof(buf), "[%02d:%02d:%02d.%03lld] ",
+           tm_buf.tm_hour, tm_buf.tm_min, tm_buf.tm_sec, (long long)ms.count());
+  return os << buf;
+}
+
 Profiler::Profiler(void (*result_callback)(LpProfilingResult), void (*message_callback)(LpProfilingMessage)) {
   context_request_ = new ContextRequest();
   auto status = qp_initialize(context_request_, nullptr);
   if (status != RETURN_CODE_SUCCESS) {
-    fprintf(stderr, "Failed to initialize QProfiler API: %d\n", static_cast<int>(status));
+    Log(std::cerr) << "Failed to initialize QProfiler API: " << static_cast<int>(status) << "\n";
     abort();
   }
 
@@ -280,7 +294,7 @@ Profiler::~Profiler() {
   }
 
   if (qp_destroy(context_request_) != RETURN_CODE_SUCCESS) {
-    fprintf(stderr, "Failed to destroy QProfiler API context\n");
+    Log(std::cerr) << "Failed to destroy QProfiler API context\n";
     abort();
   }
 
@@ -288,28 +302,27 @@ Profiler::~Profiler() {
     delete context_request_;
   }
 
-  fprintf(stdout, "Completed %u profiling iterations\n", count_);
+  Log() << "Completed " << count_ << " profiling iterations\n";
 }
 
 void Profiler::PrintCapabilities() {
   CapabilitiesResponse response = {};
   auto status = qp_getCapabilities(context_request_, &response);
   if (status != RETURN_CODE_SUCCESS) {
-    fprintf(stderr, "Failed to get capabilities: %d\n", static_cast<int>(status));
+    Log(std::cerr) << "Failed to get capabilities: " << static_cast<int>(status) << "\n";
     return;
   }
 
   for (uint8_t i = 0; i < response.capabilitiesLen; i++) {
     const auto& cap = response.capabilities[i];
-    std::cout << "\n[" << cap.capabilityName.capabilityName << "]\n";
-
-    std::cout << "  samplingRates  (" << cap.samplingRatesLen << "):";
+    Log() << "[" << cap.capabilityName.capabilityName << "]\n";
+    Log() << "  samplingRates  (" << cap.samplingRatesLen << "):";
     for (uint32_t j = 0; j < cap.samplingRatesLen; j++) {
       std::cout << " " << cap.samplingRates[j] << "ms";
     }
     std::cout << "\n";
 
-    std::cout << "  streamingRates (" << cap.streamingRatesLen << "):";
+    Log() << "  streamingRates (" << cap.streamingRatesLen << "):";
     for (uint32_t j = 0; j < cap.streamingRatesLen; j++) {
       std::cout << " " << cap.streamingRates[j] << "ms";
     }
@@ -320,16 +333,16 @@ void Profiler::PrintCapabilities() {
 void Profiler::Start() {
   auto status = qp_start(context_request_, start_config_);
   if (status != RETURN_CODE_SUCCESS) {
-    fprintf(stderr, "Failed to start apps-proc-ddr-metrics: %d\n", static_cast<int>(status));
+    Log(std::cerr) << "Failed to start apps-proc-ddr-metrics: " << static_cast<int>(status) << "\n";
     abort();
   }
 
   status = qp_start(context_request_, start_config_bw_);
   if (status == RETURN_CODE_WRONG_CAPABILITY) {
-    fprintf(stderr, "Warning: bw-profiler-ddr-metrics not supported on this device, skipping\n");
+    Log(std::cerr) << "Warning: bw-profiler-ddr-metrics not supported on this device, skipping\n";
     bw_started_ = false;
   } else if (status != RETURN_CODE_SUCCESS) {
-    fprintf(stderr, "Failed to start bw-profiler-ddr-metrics: %d\n", static_cast<int>(status));
+    Log(std::cerr) << "Failed to start bw-profiler-ddr-metrics: " << static_cast<int>(status) << "\n";
     abort();
   } else {
     bw_started_ = true;
@@ -337,10 +350,10 @@ void Profiler::Start() {
 
   status = qp_start(context_request_, start_config_nsp_);
   if (status == RETURN_CODE_WRONG_CAPABILITY) {
-    fprintf(stderr, "Warning: nsp-dsp-metrics not supported on this device, skipping\n");
+    Log(std::cerr) << "Warning: nsp-dsp-metrics not supported on this device, skipping\n";
     nsp_started_ = false;
   } else if (status != RETURN_CODE_SUCCESS) {
-    fprintf(stderr, "Failed to start nsp-dsp-metrics: %d\n", static_cast<int>(status));
+    Log(std::cerr) << "Failed to start nsp-dsp-metrics: " << static_cast<int>(status) << "\n";
     abort();
   } else {
     nsp_started_ = true;
@@ -348,10 +361,10 @@ void Profiler::Start() {
 
   status = qp_start(context_request_, start_config_stats_);
   if (status == RETURN_CODE_WRONG_CAPABILITY) {
-    fprintf(stderr, "Warning: nsp-dsp-stats not supported on this device, skipping\n");
+    Log(std::cerr) << "Warning: nsp-dsp-stats not supported on this device, skipping\n";
     stats_started_ = false;
   } else if (status != RETURN_CODE_SUCCESS) {
-    fprintf(stderr, "Failed to start nsp-dsp-stats: %d\n", static_cast<int>(status));
+    Log(std::cerr) << "Failed to start nsp-dsp-stats: " << static_cast<int>(status) << "\n";
     abort();
   } else {
     stats_started_ = true;
@@ -361,14 +374,14 @@ void Profiler::Start() {
 void Profiler::Stop() {
   auto status = qp_stop(context_request_, stop_config_);
   if (status != RETURN_CODE_SUCCESS) {
-    fprintf(stderr, "Failed to stop apps-proc-ddr-metrics: %d\n", static_cast<int>(status));
+    Log(std::cerr) << "Failed to stop apps-proc-ddr-metrics: " << static_cast<int>(status) << "\n";
     abort();
   }
 
   if (bw_started_) {
     status = qp_stop(context_request_, stop_config_bw_);
     if (status != RETURN_CODE_SUCCESS) {
-      fprintf(stderr, "Failed to stop bw-profiler-ddr-metrics: %d\n", static_cast<int>(status));
+      Log(std::cerr) << "Failed to stop bw-profiler-ddr-metrics: " << static_cast<int>(status) << "\n";
       abort();
     }
   }
@@ -376,7 +389,7 @@ void Profiler::Stop() {
   if (nsp_started_) {
     status = qp_stop(context_request_, stop_config_nsp_);
     if (status != RETURN_CODE_SUCCESS) {
-      fprintf(stderr, "Failed to stop nsp-dsp-metrics: %d\n", static_cast<int>(status));
+      Log(std::cerr) << "Failed to stop nsp-dsp-metrics: " << static_cast<int>(status) << "\n";
       abort();
     }
   }
@@ -384,7 +397,7 @@ void Profiler::Stop() {
   if (stats_started_) {
     status = qp_stop(context_request_, stop_config_stats_);
     if (status != RETURN_CODE_SUCCESS) {
-      fprintf(stderr, "Failed to stop nsp-dsp-stats: %d\n", static_cast<int>(status));
+      Log(std::cerr) << "Failed to stop nsp-dsp-stats: " << static_cast<int>(status) << "\n";
       abort();
     }
   }
@@ -405,8 +418,8 @@ void Profiler::ResultCallback(LpProfilingResult profiling_result) {
         auto* res = &batch->result_array[i];
         if (res->profileField == nullptr) continue;
         auto* field = res->profileField;
-        std::cout << "Metric ID: " << field->fieldId
-                  << " (" << (field->name ? field->name : "?") << ")";
+        Log() << "Metric ID: " << field->fieldId
+               << " (" << (field->name ? field->name : "?") << ")";
         // multi-field dataset (e.g. SNOCVote, MEMNOCVote in Bandwidth Vote)
         for (size_t j = 0; j < field->num_fieldDataSet; j++) {
           auto& ds = field->fieldDataSet_array[j];
@@ -447,12 +460,12 @@ void Profiler::ResultCallback(LpProfilingResult profiling_result) {
       uint32_t metric_id = profiling_result->profilingResultGeneric->metricResponse[i].metricId;
       auto it = kMetricNames.find(metric_id);
       const char* name = (it != kMetricNames.end()) ? it->second : "Unknown";
-      std::cout << "Metric ID: " << metric_id << " (" << name << "), Value: " << value << std::endl;
+      Log() << "Metric ID: " << metric_id << " (" << name << "), Value: " << value << "\n";
     }
   }
 
   if (qp_freeProfilingResult(profiling_result) != RETURN_CODE_SUCCESS) {
-    fprintf(stderr, "Failed to free profiling result");
+    Log(std::cerr) << "Failed to free profiling result\n";
     abort();
   }
 }
@@ -462,8 +475,7 @@ void Profiler::MessageCallback(LpProfilingMessage profiling_message) {
     return;
   }
 
-  std::cout << "Profiling Message: " << std::endl;
-  std::cout << (const char*)profiling_message->message << std::endl;
+  Log() << "Profiling Message: " << (const char*)profiling_message->message << "\n";
 }
 
 }  // namespace qprof
