@@ -113,28 +113,20 @@ Profiler::Profiler(void (*result_callback)(LpProfilingResult), void (*message_ca
   }
 
   // --- Capability 1: apps-proc-ddr-metrics ---
-  // NOC-level and LLCC/DDR controller bandwidth metrics
+  // SoC NoC (Network-on-Chip) and DDR controller bandwidth counters.
+  // Measures per-client DDR bandwidth at the NoC interconnect level (APPS, GPU, NSP).
+  // Supported metric IDs on this device: 4661-4664
+  //   (4625-4630, 4665-4672 are NOT supported)
+  // Supported sampling rates: 10ms
+  // Supported streaming rates: 200ms, 500ms
   start_config_ = new ProfilingEventStartConfiguration();
   start_config_->capabilityName.capabilityNameLen = snprintf((char*)start_config_->capabilityName.capabilityName,
                                                              CAPABILITY_NAME_LENGTH, "profiler:apps-proc-ddr-metrics");
-  start_config_->metricIds.metricIdsLen = 17;
-  start_config_->metricIds.metricIds[0]  = 4625;  // LLCC DDR Total Bandwidth     (DDR Controller Total)  MBps
-  start_config_->metricIds.metricIds[1]  = 4626;  // LLCC DDR read bandwidth      (DDR Controller read)   MBps
-  start_config_->metricIds.metricIds[2]  = 4627;  // LLCC DDR write bandwidth     (DDR Controller write)  MBps
-  start_config_->metricIds.metricIds[3]  = 4628;  // DDR Total Bandwidth                                  MBps
-  start_config_->metricIds.metricIds[4]  = 4629;  // DDR Read Bandwidth           (DDR Total Read)        MBps
-  start_config_->metricIds.metricIds[5]  = 4630;  // DDR Write Bandwidth          (DDR Total Write)       MBps
-  start_config_->metricIds.metricIds[6]  = 4661;  // NOC DDR APPS0 Bandwidth                              MBps
-  start_config_->metricIds.metricIds[7]  = 4662;  // NOC DDR APPS1 Bandwidth                              MBps
-  start_config_->metricIds.metricIds[8]  = 4663;  // NOC DDR GPU Bandwidth                                MBps
-  start_config_->metricIds.metricIds[9]  = 4664;  // NOC DDR NSP Bandwidth  (NOC DDR NSP0)                MBps
-  start_config_->metricIds.metricIds[10] = 4665;  // NOC DDR NSP1 Bandwidth                               MBps
-  start_config_->metricIds.metricIds[11] = 4666;  // NOC DDR NSP2 Bandwidth                               MBps
-  start_config_->metricIds.metricIds[12] = 4667;  // NOC DDR NSP3 Bandwidth                               MBps
-  start_config_->metricIds.metricIds[13] = 4668;  // NOC DDR Total Bandwidth                              MBps
-  start_config_->metricIds.metricIds[14] = 4670;  // LLC CPU Miss Rate                                    %
-  start_config_->metricIds.metricIds[15] = 4671;  // LLC GPU Miss Rate                                    %
-  start_config_->metricIds.metricIds[16] = 4672;  // LLC NSP Miss Rate                                    %
+  start_config_->metricIds.metricIdsLen = 4;
+  // start_config_->metricIds.metricIds[0]  = 4661;  // NOC DDR APPS0 Bandwidth                              MBps
+  // start_config_->metricIds.metricIds[1]  = 4662;  // NOC DDR APPS1 Bandwidth                              MBps
+  // start_config_->metricIds.metricIds[2]  = 4663;  // NOC DDR GPU Bandwidth                                MBps
+  start_config_->metricIds.metricIds[3]  = 4664;  // NOC DDR NSP Bandwidth  (NOC DDR NSP0)                MBps
 
   start_config_->streamingRate = 200;
   start_config_->samplingRate = 10;
@@ -147,7 +139,10 @@ Profiler::Profiler(void (*result_callback)(LpProfilingResult), void (*message_ca
   stop_config_->metricIds.metricIdsLen = 0;
 
   // --- Capability 2: bw-profiler-ddr-metrics ---
-  // DDRSS-level per-client bandwidth (CPU/GPU/NSP BW at DDR)
+  // DDRSS (DDR Sub-System) hardware bandwidth profiler counters.
+  // Measures per-client bandwidth at the DDR controller level (GPU, CPU, NSP).
+  // NOTE: Not supported on this device (v2.25.8.4). qp_start returns WRONG_CAPABILITY.
+  // Metric IDs: 5632 (GPU BW), 5633 (CPU BW), 5638 (NSP BW)
   start_config_bw_ = new ProfilingEventStartConfiguration();
   start_config_bw_->capabilityName.capabilityNameLen = snprintf((char*)start_config_bw_->capabilityName.capabilityName,
                                                                 CAPABILITY_NAME_LENGTH, "profiler:bw-profiler-ddr-metrics");
@@ -167,11 +162,20 @@ Profiler::Profiler(void (*result_callback)(LpProfilingResult), void (*message_ca
   stop_config_bw_->metricIds.metricIdsLen = 0;
 
   // --- Capability 3: nsp-dsp-metrics ---
-  // DSP internal PMU counters for NSP0 (NPU0) — fine-grained per-unit BW and L2 miss metrics
+  // DSP internal PMU (Performance Monitoring Unit) counters for NSP0.
+  // Fine-grained per-unit bandwidth and cache miss metrics:
+  //   AXI bus (L2<->DDR), IU/DU L2 cache, L2FETCH engine, HVX L2, HMX, uDMA.
+  // Supported metric IDs on this device:
+  //   4096-4184 4187-4188 4190-4192 4195 4198-4205 4236-4241
+  //   4352 4356 4358 4360-4362 4366-4374 4377-4385
+  //   4480-4481 4496-4524
+  //   (4387 4388 4392 4393 are NOT supported)
+  // Supported sampling rates: 1ms, 10ms
+  // Supported streaming rates: 200ms, 1000ms
   start_config_nsp_ = new ProfilingEventStartConfiguration();
   start_config_nsp_->capabilityName.capabilityNameLen = snprintf((char*)start_config_nsp_->capabilityName.capabilityName,
                                                                  CAPABILITY_NAME_LENGTH, "profiler:nsp-dsp-metrics");
-  start_config_nsp_->metricIds.metricIdsLen = 45;
+  start_config_nsp_->metricIds.metricIdsLen = 38;
   // AXI bus bandwidth (total L2<->DDR traffic at bus level)
   start_config_nsp_->metricIds.metricIds[0]  = 4141;  // AXI 128Byte read request        MBps
   start_config_nsp_->metricIds.metricIds[1]  = 4142;  // AXI 128Byte write request       MBps
@@ -200,35 +204,26 @@ Profiler::Profiler(void (*result_callback)(LpProfilingResult), void (*message_ca
   // L2FETCH engine
   start_config_nsp_->metricIds.metricIds[22] = 4170;  // L2 FETCH engine access          MBps
   start_config_nsp_->metricIds.metricIds[23] = 4171;  // L2 FETCH engine miss (DDR)      MBps
-  // HVX L2 bandwidth / miss (HVX_INSTRUCTION, HVX_L2 subcategories)
+  // HVX L2 bandwidth / miss (HVX_L2 subcategory, 4366-4374)
   start_config_nsp_->metricIds.metricIds[24] = 4369;  // HVX L2 stores                   MBps
   start_config_nsp_->metricIds.metricIds[25] = 4370;  // HVX L2 store miss (→ DDR)       MBps
   start_config_nsp_->metricIds.metricIds[26] = 4371;  // HVX L2 loads                    MBps
   start_config_nsp_->metricIds.metricIds[27] = 4372;  // HVX L2 load miss (→ DDR)        MBps
   start_config_nsp_->metricIds.metricIds[28] = 4373;  // HVX L2 load miss ratio          %
   start_config_nsp_->metricIds.metricIds[29] = 4374;  // HVX L2 store miss ratio         %
-  start_config_nsp_->metricIds.metricIds[30] = 4387;  // HVX L2 BW                       MBps
-  // DDR BW 128B (bus-level, for roofline)
-  start_config_nsp_->metricIds.metricIds[31] = 4388;  // DDR BW 128B                     MBps
-  // HMX bandwidth (HMX subcategory)
-  start_config_nsp_->metricIds.metricIds[32] = 4392;  // HMX VTCM BW                     MBps
-  start_config_nsp_->metricIds.metricIds[33] = 4393;  // HMX DDR BW                      MBps
-  // uDMA bandwidth (UDMA subcategory)
-  start_config_nsp_->metricIds.metricIds[34] = 4504;  // UDMA L2 coherent WR             MBps
-  start_config_nsp_->metricIds.metricIds[35] = 4505;  // UDMA L2 coherent WR miss        MBps
-  start_config_nsp_->metricIds.metricIds[36] = 4506;  // UDMA L2 coherent RD             MBps
-  start_config_nsp_->metricIds.metricIds[37] = 4507;  // UDMA L2 coherent RD miss        MBps
-  start_config_nsp_->metricIds.metricIds[38] = 4508;  // UDMA L2 non-coherent WR         MBps
-  start_config_nsp_->metricIds.metricIds[39] = 4509;  // UDMA L2 non-coherent RD         MBps
-  start_config_nsp_->metricIds.metricIds[40] = 4510;  // UDMA VTCM store                 MBps
-  start_config_nsp_->metricIds.metricIds[41] = 4511;  // UDMA VTCM reads                 MBps
-  // HMX utilization / activity
-  start_config_nsp_->metricIds.metricIds[42] = 4480;  // HMX Utilization                 %
-  start_config_nsp_->metricIds.metricIds[43] = 4481;  // HMX Active                      MCPS
-  start_config_nsp_->metricIds.metricIds[44] = 4521;  // HMX Clock                       MHz
+  // HMX utilization / activity (4480-4481)
+  start_config_nsp_->metricIds.metricIds[30] = 4480;  // HMX Utilization                 %
+  start_config_nsp_->metricIds.metricIds[31] = 4481;  // HMX Active                      MCPS
+  // uDMA bandwidth (UDMA subcategory, 4496-4524)
+  start_config_nsp_->metricIds.metricIds[32] = 4504;  // UDMA L2 coherent WR             MBps
+  start_config_nsp_->metricIds.metricIds[33] = 4505;  // UDMA L2 coherent WR miss        MBps
+  start_config_nsp_->metricIds.metricIds[34] = 4506;  // UDMA L2 coherent RD             MBps
+  start_config_nsp_->metricIds.metricIds[35] = 4507;  // UDMA L2 coherent RD miss        MBps
+  start_config_nsp_->metricIds.metricIds[36] = 4508;  // UDMA L2 non-coherent WR         MBps
+  start_config_nsp_->metricIds.metricIds[37] = 4509;  // UDMA L2 non-coherent RD         MBps
 
   start_config_nsp_->streamingRate = 200;
-  start_config_nsp_->samplingRate = 10;
+  start_config_nsp_->samplingRate = 1;
   start_config_nsp_->resultType = RESULT_TYPE_GENERIC_STRUCT;
   start_config_nsp_->profilerConfig = nullptr;
 
@@ -238,7 +233,11 @@ Profiler::Profiler(void (*result_callback)(LpProfilingResult), void (*message_ca
   stop_config_nsp_->metricIds.metricIdsLen = 0;
 
   // --- Capability 4: nsp-dsp-stats ---
-  // NSP bandwidth vote and measured bus clock (multi-field verbose struct)
+  // NSP bus clock and bandwidth vote counters (verbose struct format).
+  // Reports multi-field data: SNOCVote, MEMNOCVote, MeasuredMEMNOCClock, MeasuredBIMCClock.
+  // Metric IDs: 5889 (Bandwidth Vote), 5893 (Measured Bus Clock)
+  // Supported sampling rates: 1000ms, 2000ms
+  // Supported streaming rates: 1000ms, 2000ms
   start_config_stats_ = new ProfilingEventStartConfiguration();
   start_config_stats_->capabilityName.capabilityNameLen = snprintf((char*)start_config_stats_->capabilityName.capabilityName,
                                                                    CAPABILITY_NAME_LENGTH, "profiler:nsp-dsp-stats");
@@ -313,9 +312,10 @@ void Profiler::PrintCapabilities() {
     return;
   }
 
+  Log() << "Capabilities count: " << (int)response.capabilitiesLen << "\n";
   for (uint8_t i = 0; i < response.capabilitiesLen; i++) {
     const auto& cap = response.capabilities[i];
-    Log() << "[" << cap.capabilityName.capabilityName << "]\n";
+    Log() << "Capability " << (int)i << ": [" << cap.capabilityName.capabilityName << "]\n";
     Log() << "  samplingRates  (" << cap.samplingRatesLen << "):";
     for (uint32_t j = 0; j < cap.samplingRatesLen; j++) {
       std::cout << " " << cap.samplingRates[j] << "ms";
