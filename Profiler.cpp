@@ -1,9 +1,11 @@
 #include "Profiler.hpp"
 
+#include <algorithm>
 #include <cstdio>
 #include <chrono>
 #include <iostream>
 #include <unordered_map>
+#include <vector>
 
 namespace qprof {
 
@@ -122,11 +124,11 @@ Profiler::Profiler(void (*result_callback)(LpProfilingResult), void (*message_ca
   start_config_ = new ProfilingEventStartConfiguration();
   start_config_->capabilityName.capabilityNameLen = snprintf((char*)start_config_->capabilityName.capabilityName,
                                                              CAPABILITY_NAME_LENGTH, "profiler:apps-proc-ddr-metrics");
-  start_config_->metricIds.metricIdsLen = 4;
-  // start_config_->metricIds.metricIds[0]  = 4661;  // NOC DDR APPS0 Bandwidth                              MBps
-  // start_config_->metricIds.metricIds[1]  = 4662;  // NOC DDR APPS1 Bandwidth                              MBps
-  // start_config_->metricIds.metricIds[2]  = 4663;  // NOC DDR GPU Bandwidth                                MBps
-  start_config_->metricIds.metricIds[3]  = 4664;  // NOC DDR NSP Bandwidth  (NOC DDR NSP0)                MBps
+  start_config_->metricIds.metricIdsLen = 2;
+  // start_config_->metricIds.metricIds[0]  = 4661;  // NOC DDR APPS0 Bandwidth (bug: 2x larger when using multicore)
+  // start_config_->metricIds.metricIds[1]  = 4662;  // NOC DDR APPS1 Bandwidth (bug: 2x larger when using multicore)
+  start_config_->metricIds.metricIds[0]  = 4663;  // NOC DDR GPU Bandwidth                                MBps
+  start_config_->metricIds.metricIds[1]  = 4664;  // NOC DDR NSP Bandwidth  (NOC DDR NSP0)                MBps
 
   start_config_->streamingRate = 200;
   start_config_->samplingRate = 10;
@@ -235,7 +237,9 @@ Profiler::Profiler(void (*result_callback)(LpProfilingResult), void (*message_ca
   // --- Capability 4: nsp-dsp-stats ---
   // NSP bus clock and bandwidth vote counters (verbose struct format).
   // Reports multi-field data: SNOCVote, MEMNOCVote, MeasuredMEMNOCClock, MeasuredBIMCClock.
-  // Metric IDs: 5889 (Bandwidth Vote), 5893 (Measured Bus Clock)
+  // Supported metric IDs on this device (21 total):
+  //   5888-5890 5893-5900 5903-5907 5909-5912 5914
+  // Using: 5889 (Bandwidth Vote: SNOCVote, MEMNOCVote), 5893 (Measured Bus Clock: MeasuredMEMNOCClock, MeasuredBIMCClock)
   // Supported sampling rates: 1000ms, 2000ms
   // Supported streaming rates: 1000ms, 2000ms
   start_config_stats_ = new ProfilingEventStartConfiguration();
@@ -304,6 +308,29 @@ Profiler::~Profiler() {
   Log() << "Completed " << count_ << " profiling iterations\n";
 }
 
+static std::string MetricIdsToRanges(const uint32_t* ids, uint8_t len) {
+  if (len == 0) return "(none)";
+  std::vector<uint32_t> sorted(ids, ids + len);
+  std::sort(sorted.begin(), sorted.end());
+
+  std::string out;
+  uint32_t range_start = sorted[0], range_end = sorted[0];
+  for (size_t i = 1; i <= sorted.size(); i++) {
+    if (i < sorted.size() && sorted[i] == range_end + 1) {
+      range_end = sorted[i];
+    } else {
+      if (!out.empty()) out += ' ';
+      if (range_start == range_end) {
+        out += std::to_string(range_start);
+      } else {
+        out += std::to_string(range_start) + '-' + std::to_string(range_end);
+      }
+      if (i < sorted.size()) { range_start = range_end = sorted[i]; }
+    }
+  }
+  return out;
+}
+
 void Profiler::PrintCapabilities() {
   CapabilitiesResponse response = {};
   auto status = qp_getCapabilities(context_request_, &response);
@@ -327,6 +354,9 @@ void Profiler::PrintCapabilities() {
       std::cout << " " << cap.streamingRates[j] << "ms";
     }
     std::cout << "\n";
+
+    Log() << "  metricIds      (" << (int)cap.metricIds.metricIdsLen << "): "
+          << MetricIdsToRanges(cap.metricIds.metricIds, cap.metricIds.metricIdsLen) << "\n";
   }
 }
 

@@ -3,7 +3,7 @@ TODO
 
 Setting
 - Device: Galaxy S25+
-- Qualcomm Profiler version: v2.25.12.12
+- Qualcomm Profiler version: v2.25.8.4
 
 Results
 - NOC DDR NSP Bandwidth (4664)는 370000MBps 같은 이상한 숫자 나옴.
@@ -20,42 +20,54 @@ Results
 
 qprof v2.25.8.4 기준 PrintCapabilities() 결과 (v2.25.12.12에서는 아예 안 나옴):
 ```
-[03:51:00.380] Capabilities count: 12
-[03:51:00.380] Capability 0: [profiler:apps-proc-mem-metrics]
-[03:51:00.380]   samplingRates  (16): 50ms 60ms 70ms 80ms 90ms 100ms 110ms 120ms 130ms 140ms 150ms 160ms 170ms 180ms 190ms 200ms
-[03:51:00.380]   streamingRates (2): 200ms 1000ms
-[03:51:00.380] Capability 1: [profiler:apps-proc-process-metrics]
-[03:51:00.380]   samplingRates  (2): 50ms 200ms
-[03:51:00.380]   streamingRates (2): 200ms 1000ms
-[03:51:00.380] Capability 2: [profiler:proc-gpu-specific-metrics]
-[03:51:00.380]   samplingRates  (2): 50ms 70ms
-[03:51:00.380]   streamingRates (2): 200ms 1000ms
-[03:51:00.380] Capability 3: [profiler:apps-proc-thread-profiling]
-[03:51:00.380]   samplingRates  (2): 100ms 200ms
-[03:51:00.380]   streamingRates (2): 200ms 400ms
-[03:51:00.380] Capability 4: [profiler:nsp-dsp-metrics]
-[03:51:00.380]   samplingRates  (2): 1ms 10ms
-[03:51:00.380]   streamingRates (2): 200ms 1000ms
-[03:51:00.380] Capability 5: [profiler:apps-proc-cpu-metrics]
-[03:51:00.380]   samplingRates  (2): 50ms 200ms
-[03:51:00.380]   streamingRates (2): 200ms 1000ms
-[03:51:00.380] Capability 6: [profiler:apps-proc-io-metrics]
-[03:51:00.380]   samplingRates  (2): 200ms 1000ms
-[03:51:00.380]   streamingRates (1): 1000ms
-[03:51:00.380] Capability 7: [profiler:apps-proc-process-mem-metrics]
-[03:51:00.380]   samplingRates  (2): 50ms 200ms
-[03:51:00.380]   streamingRates (2): 200ms 1000ms
-[03:51:00.381] Capability 8: [profiler:apps-proc-net-metrics]
-[03:51:00.381]   samplingRates  (2): 50ms 200ms
-[03:51:00.381]   streamingRates (2): 200ms 1000ms
-[03:51:00.381] Capability 9: [profiler:apps-proc-ddr-metrics]
-[03:51:00.381]   samplingRates  (1): 10ms
-[03:51:00.381]   streamingRates (2): 200ms 500ms
-[03:51:00.381] Capability 10: [profiler:apps-proc-thermal-metrics]
-[03:51:00.381]   samplingRates  (16): 50ms 60ms 70ms 80ms 90ms 100ms 110ms 120ms 130ms 140ms 150ms 160ms 170ms 180ms 190ms 200ms
-[03:51:00.381]   streamingRates (2): 200ms 1000ms
-[03:51:00.381] Capability 11: [profiler:nsp-dsp-stats]
-[03:51:00.381]   samplingRates  (2): 1000ms 2000ms
-[03:51:00.381]   streamingRates (2): 1000ms 2000ms
-[03:51:00.389] Warning: bw-profiler-ddr-metrics not supported on this device, skipping
+[04:04:43.799] Capabilities count: 12
+[04:04:43.799] Capability 0: [profiler:apps-proc-mem-metrics]
+[04:04:43.799]   samplingRates  (16): 50ms 60ms 70ms 80ms 90ms 100ms 110ms 120ms 130ms 140ms 150ms 160ms 170ms 180ms 190ms 200ms
+[04:04:43.799]   streamingRates (2): 200ms 1000ms
+[04:04:43.799]   metricIds      (8): 4639-4641 4643-4645 4648-4649
+[04:04:43.799] Capability 1: [profiler:apps-proc-process-metrics]
+[04:04:43.799]   samplingRates  (2): 50ms 200ms
+[04:04:43.799]   streamingRates (2): 200ms 1000ms
+[04:04:43.799]   metricIds      (1): 4642
+[04:04:43.799] Capability 2: [profiler:proc-gpu-specific-metrics]
+[04:04:43.799]   samplingRates  (2): 50ms 70ms
+[04:04:43.799]   streamingRates (2): 200ms 1000ms
+[04:04:43.799]   metricIds      (5): 4864-4868
+[04:04:43.799] Capability 3: [profiler:apps-proc-thread-profiling]
+[04:04:43.799]   samplingRates  (2): 100ms 200ms
+[04:04:43.799]   streamingRates (2): 200ms 400ms
+[04:04:43.799]   metricIds      (1): 4660
+[04:04:43.799] Capability 4: [profiler:nsp-dsp-metrics]
+[04:04:43.799]   samplingRates  (2): 1ms 10ms
+[04:04:43.799]   streamingRates (2): 200ms 1000ms
+[04:04:43.799]   metricIds      (164): 4096-4184 4187-4188 4190-4192 4195 4198-4205 4236-4241 4352 4356 4358 4360-4362 4366-4374 4377-4385 4480-4481 4496-4524
+[04:04:43.799] Capability 5: [profiler:apps-proc-cpu-metrics]
+[04:04:43.799]   samplingRates  (2): 50ms 200ms
+[04:04:43.799]   streamingRates (2): 200ms 1000ms
+[04:04:43.799]   metricIds      (3): 4608 4616-4617
+[04:04:43.799] Capability 6: [profiler:apps-proc-io-metrics]
+[04:04:43.799]   samplingRates  (2): 200ms 1000ms
+[04:04:43.799]   streamingRates (1): 1000ms
+[04:04:43.799]   metricIds      (2): 4646-4647
+[04:04:43.799] Capability 7: [profiler:apps-proc-process-mem-metrics]
+[04:04:43.799]   samplingRates  (2): 50ms 200ms
+[04:04:43.799]   streamingRates (2): 200ms 1000ms
+[04:04:43.799]   metricIds      (4): 4683-4686
+[04:04:43.799] Capability 8: [profiler:apps-proc-net-metrics]
+[04:04:43.799]   samplingRates  (2): 50ms 200ms
+[04:04:43.799]   streamingRates (2): 200ms 1000ms
+[04:04:43.799]   metricIds      (9): 4656-4659 4678-4682
+[04:04:43.799] Capability 9: [profiler:apps-proc-ddr-metrics]
+[04:04:43.799]   samplingRates  (1): 10ms
+[04:04:43.799]   streamingRates (2): 200ms 500ms
+[04:04:43.799]   metricIds      (4): 4661-4664
+[04:04:43.799] Capability 10: [profiler:apps-proc-thermal-metrics]
+[04:04:43.799]   samplingRates  (16): 50ms 60ms 70ms 80ms 90ms 100ms 110ms 120ms 130ms 140ms 150ms 160ms 170ms 180ms 190ms 200ms
+[04:04:43.799]   streamingRates (2): 200ms 1000ms
+[04:04:43.799]   metricIds      (2): 6464-6465
+[04:04:43.799] Capability 11: [profiler:nsp-dsp-stats]
+[04:04:43.799]   samplingRates  (2): 1000ms 2000ms
+[04:04:43.799]   streamingRates (2): 1000ms 2000ms
+[04:04:43.799]   metricIds      (21): 5888-5890 5893-5900 5903-5907 5909-5912 5914
+[04:04:43.807] Warning: bw-profiler-ddr-metrics not supported on this device, skipping
 ```
